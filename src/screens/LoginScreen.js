@@ -1,55 +1,49 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Text,
   View,
-  TouchableOpacity,
   TextInput,
   StyleSheet,
+  TouchableOpacity,
   ScrollView
 } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useDispatch } from 'react-redux'
 import axios from 'axios'
 import LinearGradient from 'react-native-linear-gradient'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { setMe } from '../store/me'
-
 import Loader from '../components/Loader'
 import { Colors } from '../constants/theme'
 import { Storage } from '../constants/storage'
 
 const errors = {
   AUTH_ALL_MUST_BE_FILLED: 'Все поля должны быть заполнены!',
-  AUTH_NAME_IS_BUSY: 'Увы, это имя уже занято!',
-  AUTH_EMAIL_IS_BUSY: 'Пользователь с такой почтой уже существует. Войти?',
-  AUTH_EMAIL_INCORRECT: 'Такой почты не существует!',
-  AUTH_PASSWORD_INCORRECT: 'Пароль должен быть не короче 5 символов!',
-  AUTH_PASSWORDS_DO_NOT_MATCH: 'Введенные пароли не совпадают!'
+  AUTH_EMAIL_NOT_EXISTS:
+    'Пользователя с такой почтой не существует. Зарегистрироваться?',
+  AUTH_INVALID_PASSWORD: 'Неверный пароль!'
 }
 
-const AuthScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation }) => {
   const dispatch = useDispatch()
 
-  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [passwordConfirm, setPasswordConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const send = async () => {
     setLoading(true)
     try {
-      const { data } = await axios.put('http://localhost:3001/auth/local', {
-        name,
+      const { data } = await axios.post('http://localhost:3001/auth/local', {
         email,
-        password,
-        passwordConfirm
+        password
       })
 
       if (!data.error) {
         setLoading(false)
         dispatch(setMe(data.me))
+
         await AsyncStorage.setItem(Storage.token, data.token)
       } else {
         setError(data.error)
@@ -82,32 +76,15 @@ const AuthScreen = ({ navigation }) => {
               }
             ]}
           >
-            <Text style={{ color: Colors.red, fontWeight: 'bold' }}>
+            <Text
+              style={{
+                color: Colors.red,
+                fontWeight: 'bold'
+              }}
+            >
               {error && errors[error.message]}
             </Text>
           </View>
-
-          <Text style={styles.text}>Имя</Text>
-          <TextInput
-            name="name"
-            placeholder="Введите уникальное имя"
-            placeholderTextColor={Colors.white}
-            value={name}
-            onChangeText={n => setName(n.trim())}
-            onFocus={() => {
-              setError(null)
-            }}
-            style={[
-              styles.input,
-              {
-                borderColor: error?.fields.includes('name')
-                  ? Colors.red
-                  : Colors.white
-              }
-            ]}
-            selectionColor={Colors.pLight}
-            autoCapitalize="none"
-          />
 
           <Text style={styles.text}>Почта</Text>
           <TextInput
@@ -115,7 +92,9 @@ const AuthScreen = ({ navigation }) => {
             placeholder="Введите почту"
             placeholderTextColor={Colors.white}
             value={email}
-            onChangeText={e => setEmail(e.trim())}
+            onChangeText={e => {
+              setEmail(e.trim())
+            }}
             onFocus={() => {
               setError(null)
             }}
@@ -128,7 +107,6 @@ const AuthScreen = ({ navigation }) => {
               }
             ]}
             selectionColor={Colors.pLight}
-            autoComplete={email}
             autoCapitalize="none"
           />
 
@@ -138,7 +116,9 @@ const AuthScreen = ({ navigation }) => {
             placeholder="Введите пароль"
             placeholderTextColor={Colors.white}
             value={password}
-            onChangeText={p => setPassword(p.trim())}
+            onChangeText={p => {
+              setPassword(p.trim())
+            }}
             onFocus={() => {
               setError(null)
             }}
@@ -154,27 +134,6 @@ const AuthScreen = ({ navigation }) => {
             autoCapitalize="none"
           />
 
-          <TextInput
-            name="passwordConfirmation"
-            placeholder="Повторите пароль"
-            placeholderTextColor={Colors.white}
-            value={passwordConfirm}
-            onChangeText={p => setPasswordConfirm(p.trim())}
-            onFocus={() => {
-              setError(null)
-            }}
-            style={[
-              styles.input,
-              {
-                borderColor: error?.fields.includes('passwordConfirm')
-                  ? Colors.red
-                  : Colors.white
-              }
-            ]}
-            selectionColor={Colors.pLight}
-            autoCapitalize="none"
-          />
-
           <View style={{ alignItems: 'center' }}>
             <TouchableOpacity
               style={styles.button}
@@ -182,23 +141,24 @@ const AuthScreen = ({ navigation }) => {
                 send()
               }}
             >
-              <Text>Зарегистрироваться!!!</Text>
+              <Text>Войти!!!</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
             style={{ alignItems: 'center' }}
-            onPress={() => {
-              navigation.navigate('Login')
-            }}
+            onPress={() => navigation.goBack()}
           >
-            <Text style={styles.text}>Уже есть аккаунт?</Text>
-            <Text style={[styles.text, { color: Colors.sLight }]}>Войти</Text>
+            <Text style={styles.text}>Еще нет аккаунта?</Text>
+            <Text style={[styles.text, { color: Colors.sLight }]}>
+              Зарегистрироваться
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
     </LinearGradient>
   )
 }
+
 const styles = StyleSheet.create({
   input: {
     height: 40,
@@ -224,7 +184,7 @@ const styles = StyleSheet.create({
   error: {
     // borderColor: 'red',
     // borderWidth: 1,
-    // borderRadius: 4,
+    borderRadius: 4,
     // backgroundColor: '#FFEAE9',
     marginBottom: 16,
     paddingHorizontal: 10,
@@ -234,5 +194,4 @@ const styles = StyleSheet.create({
   }
 })
 
-export { errors }
-export default AuthScreen
+export default LoginScreen
